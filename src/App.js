@@ -462,4 +462,205 @@ const AISelector = () => {
             </div>
 
             {result.isClose && (
-              <div className="bg-blue-50 bo
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+                <h3 className="text-lg font-semibold mb-2 text-gray-800">Also Consider: {runnerUpProfile.name}</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  Close scoring ({result.scoreDiff} point difference). {runnerUpProfile.name} is also a strong match.
+                </p>
+                <p className="text-sm text-gray-700">{runnerUpProfile.bestFor}</p>
+              </div>
+            )}
+
+            <div className="border-t border-gray-200 pt-6">
+              <button
+                onClick={() => setShowReasoning(!showReasoning)}
+                className="w-full flex items-center justify-between text-left text-gray-700 hover:text-orange-600 transition-colors"
+              >
+                <span className="font-semibold">
+                  {showReasoning ? 'Hide' : 'Show'} Decision Logic
+                </span>
+                <ChevronRight className={`w-5 h-5 transform transition-transform ${showReasoning ? 'rotate-90' : ''}`} />
+              </button>
+              
+              {showReasoning && (
+                <div className="mt-6 space-y-6">
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <h4 className="font-semibold mb-4 text-gray-800">Scoring Breakdown</h4>
+                    {Object.entries(result.scores)
+                      .sort(([,a], [,b]) => b - a)
+                      .map(([tool, score]) => {
+                        const profile = aiProfiles[tool];
+                        return (
+                          <div key={tool} className="mb-4">
+                            <div className="flex justify-between mb-2">
+                              <span className="font-medium text-gray-700">{profile.name}</span>
+                              <span className="text-gray-600 font-semibold">{score} points</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-3">
+                              <div
+                                className={`h-3 rounded-full bg-gradient-to-r ${profile.color} transition-all duration-500`}
+                                style={{ width: `${(score / Math.max(...Object.values(result.scores))) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <h4 className="font-semibold mb-3 text-gray-800">Key Decision Factors</h4>
+                    <ul className="space-y-2">
+                      {result.reasoning.map((reason, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                          <ChevronRight className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                          <span>{reason}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <h4 className="font-semibold mb-3 text-gray-800">Your Selected Use Cases</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {answers.useCases.map(useCase => {
+                        const option = questions[0].options.find(o => o.value === useCase);
+                        return (
+                          <span key={useCase} className="bg-white px-3 py-1 rounded-full text-sm text-gray-700 border border-gray-200">
+                            {option?.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={resetQuiz}
+            className="w-full bg-white text-gray-700 px-6 py-3 rounded-full font-semibold hover:shadow-md transition-all duration-200"
+          >
+            Start Over
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const goToNext = () => {
+    const currentIndex = activeQuestions.findIndex(q => q.id === currentStep);
+    if (currentIndex < activeQuestions.length - 1) {
+      setCurrentStep(activeQuestions[currentIndex + 1].id);
+    } else {
+      setCurrentStep('result');
+    }
+  };
+
+  const goToPrevious = () => {
+    const currentIndex = activeQuestions.findIndex(q => q.id === currentStep);
+    if (currentIndex > 0) {
+      setCurrentStep(activeQuestions[currentIndex - 1].id);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-4 py-12">
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-gray-600">
+              Question {currentQuestionIndex + 1} of {activeQuestions.length}
+            </span>
+            <button onClick={resetQuiz} className="text-gray-500 hover:text-gray-700">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="w-full bg-white rounded-full h-2">
+            <div
+              className="h-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 transition-all duration-300"
+              style={{ width: `${((currentQuestionIndex + 1) / activeQuestions.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl shadow-xl p-8">
+          <h2 className="text-2xl font-bold mb-2 text-gray-800">
+            {currentQuestion.question}
+          </h2>
+          {currentQuestion.type === 'multiple' && (
+            <p className="text-sm text-gray-500 mb-6">Select all that apply</p>
+          )}
+          
+          <div className="space-y-3 mb-6">
+            {currentQuestion.options.map((option) => {
+              const isSelected = currentQuestion.type === 'multiple'
+                ? (answers[currentQuestion.id] || []).includes(option.value)
+                : answers[currentQuestion.id] === option.value;
+              
+              return (
+                <button
+                  key={option.value}
+                  onClick={() => {
+                    if (currentQuestion.type === 'multiple') {
+                      handleMultipleChoice(currentQuestion.id, option.value);
+                    } else {
+                      handleSingleChoice(currentQuestion.id, option.value);
+                    }
+                  }}
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 ${
+                    isSelected
+                      ? 'border-orange-500 bg-orange-50'
+                      : 'border-gray-200 hover:border-orange-400 hover:bg-orange-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {currentQuestion.type === 'multiple' && (
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                        isSelected ? 'bg-orange-500 border-orange-500' : 'border-gray-300'
+                      }`}>
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                    )}
+                    <span className="text-gray-700 font-medium flex-1">{option.label}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-3">
+            {currentQuestionIndex > 0 && (
+              <button
+                onClick={goToPrevious}
+                className="px-6 py-3 rounded-full border-2 border-gray-300 text-gray-700 font-semibold hover:border-gray-400 transition-colors"
+              >
+                Back
+              </button>
+            )}
+            {currentQuestion.type === 'single' && answers[currentQuestion.id] && (
+              <button
+                onClick={goToNext}
+                className="flex-1 bg-gradient-to-r from-orange-500 to-rose-500 text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
+              >
+                {currentQuestionIndex === activeQuestions.length - 1 ? 'See Results' : 'Next'}
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )}
+            {currentQuestion.type === 'multiple' && answers[currentQuestion.id]?.length > 0 && (
+              <button
+                onClick={goToNext}
+                className="flex-1 bg-gradient-to-r from-orange-500 to-rose-500 text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
+              >
+                {currentQuestionIndex === activeQuestions.length - 1 ? 'See Results' : 'Next'}
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AISelector;
