@@ -65,4 +65,4 @@ This app is configured for easy deployment on Vercel:
 
 ## Author
 
-Your Name
+No Name
