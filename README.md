@@ -62,9 +62,6 @@ This app is configured for easy deployment on Vercel:
 3. Vercel will auto-detect the settings
 4. Click Deploy
 
-## License
-
-MIT
 
 ## Author
 
